@@ -5,12 +5,11 @@ This document outlines the database schema for the GPU Scheduler system. It incl
 ---
 
 ## Entity-Relationship Diagram (ERD)
-
 ```mermaid
 erDiagram
     USERS {
-        INT id PK
-        VARCHAR email UNIQUE
+        INT id
+        VARCHAR email
         VARCHAR name
         VARCHAR password
         DATETIME signup_date
@@ -18,8 +17,8 @@ erDiagram
         BOOLEAN is_whitelisted
     }
     REQUESTS {
-        INT id PK
-        INT user_id FK
+        INT id
+        INT user_id
         INT requested_time
         ENUM gpu_size
         INT num_gpus
@@ -31,23 +30,23 @@ erDiagram
         DATETIME created_at
     }
     GPUS {
-        CHAR(32) id PK
+        CHAR id
         VARCHAR server_name
         INT gpu_number
         ENUM gpu_size
         ENUM status
     }
     GPU_USAGE {
-        INT id PK
-        INT user_id FK
-        INT request_id FK
+        INT id
+        INT user_id
+        INT request_id
         DATETIME start_time
         DATETIME end_time
         INT actual_usage_time
     }
     WHITELIST {
-        INT id PK
-        VARCHAR email UNIQUE
+        INT id
+        VARCHAR email
     }
 
     USERS ||--o{ REQUESTS : "has many"
