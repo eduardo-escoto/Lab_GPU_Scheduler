@@ -1,22 +1,18 @@
 package handlers
 
 import (
-    "net/http"
-    "go-webserver-project/internal/services"
+	"go-webserver-project/internal/slackapp"
+	"net/http"
 )
 
-func SlackHandler(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodPost {
-        http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-        return
-    }
+func SlackEventsHandler(w http.ResponseWriter, r *http.Request) {
+	slackapp.HandleSlackEvents(w, r, slackapp.NewSlackClient().SigningSecret)
+}
 
-    // Handle Slack events
-    err := services.HandleSlackEvent(r.Body)
-    if err != nil {
-        http.Error(w, "Failed to process Slack event", http.StatusInternalServerError)
-        return
-    }
+func SlackCommandsHandler(w http.ResponseWriter, r *http.Request) {
+	slackapp.HandleSlashCommands(w, r)
+}
 
-    w.WriteHeader(http.StatusOK)
+func SlackInteractionsHandler(w http.ResponseWriter, r *http.Request) {
+	slackapp.HandleInteractions(w, r)
 }

@@ -1,23 +1,15 @@
+<!-- filepath: web/templates/layout.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Go Web Server with MariaDB</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <title>GPU Scheduler</title>
+    <!-- Include HTMX from a CDN -->
+    <script src="https://unpkg.com/htmx.org"></script>
 </head>
 <body>
-    <header>
-        <h1>Welcome to the Go Web Server</h1>
-    </header>
-    <main>
-        <div id="content" hx-get="/api/users" hx-target="#content" hx-swap="innerHTML">
-            <p>Loading users...</p>
-        </div>
-    </main>
-    <footer>
-        <p>&copy; 2023 Go Web Server</p>
-    </footer>
-    <script src="/static/js/scripts.js"></script>
+    <!-- Your content here -->
+    {{ template "content" . }}
 </body>
 </html>
