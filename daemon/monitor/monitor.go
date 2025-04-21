@@ -5,22 +5,32 @@ import (
 	"log"
 	"time"
 
-	"github.com/eduardo-escoto/gpu_request/daemon/monitor/gpu_metrics"
-
 	_ "github.com/go-sql-driver/mysql"
 )
 
 func StartGPUMonitor(dsn string, interval time.Duration) error {
+	// Debug: Print the DSN being used
+	log.Printf("Connecting to database with DSN: %s", dsn)
+
 	// Connect to the database
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
+		log.Printf("Error connecting to database: %v", err)
 		return err
 	}
 	defer db.Close()
 
-	// Get the server name
-	serverName, err := gpu_metrics.GetServerName()
+	// Test the connection
+	err = db.Ping()
 	if err != nil {
+		log.Printf("Error pinging database: %v", err)
+		return err
+	}
+
+	// Get the server name
+	serverName, err := GetServerName()
+	if err != nil {
+		log.Printf("Error getting server name: %v", err)
 		return err
 	}
 
@@ -44,23 +54,43 @@ func StartGPUMonitor(dsn string, interval time.Duration) error {
 	}
 }
 
-func updateDatabase(db *sql.DB, serverName string, gpuUsages []gpu_metrics.GPU) error {
+func updateDatabase(db *sql.DB, serverName string, gpuUsages []GPU) error {
 	for _, gpu := range gpuUsages {
-		_, err := db.Exec(`
-			INSERT INTO real_time_usage (server_name, gpu_number, utilization, memory_utilization, memory_used_mb, memory_available_mb, power_usage_watts, temperature_celsius, updated_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
-			ON DUPLICATE KEY UPDATE
-				utilization = VALUES(utilization),
-				memory_utilization = VALUES(memory_utilization),
-				memory_used_mb = VALUES(memory_used_mb),
-				memory_available_mb = VALUES(memory_available_mb),
-				power_usage_watts = VALUES(power_usage_watts),
-				temperature_celsius = VALUES(temperature_celsius),
-				updated_at = NOW()`,
-			serverName, gpu.Index, gpu.UtilizationGPU, gpu.UtilizationMemory, gpu.MemoryUsedMB, gpu.MemoryFreeMB, gpu.PowerDrawWatts, gpu.TemperatureCelsius,
-		)
+		// Check if the GPU entry already exists
+		var exists bool
+		err := db.QueryRow(`
+			SELECT EXISTS(
+				SELECT 1 FROM real_time_usage WHERE server_name = ? AND gpu_number = ?
+			)`, serverName, gpu.Index).Scan(&exists)
 		if err != nil {
 			return err
+		}
+
+		if exists {
+			// Update the existing record
+			_, err = db.Exec(`
+				UPDATE gpu_scheduler.real_time_usage
+				SET utilization = ?, memory_utilization = ?, memory_used_mb = ?, memory_available_mb = ?, 
+					power_usage_watts = ?, temperature_celsius = ?, updated_at = NOW()
+				WHERE server_name = ? AND gpu_number = ?`,
+				gpu.UtilizationGPU, gpu.UtilizationMemory, gpu.MemoryUsedMB, gpu.MemoryFreeMB,
+				gpu.PowerDrawWatts, gpu.TemperatureCelsius, serverName, gpu.Index,
+			)
+			if err != nil {
+				return err
+			}
+		} else {
+			// Insert a new record
+			_, err = db.Exec(`
+				INSERT INTO gpu_scheduler.real_time_usage (server_name, gpu_number, utilization, memory_utilization, memory_used_mb, 
+					memory_available_mb, power_usage_watts, temperature_celsius, updated_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+				serverName, gpu.Index, gpu.UtilizationGPU, gpu.UtilizationMemory, gpu.MemoryUsedMB,
+				gpu.MemoryFreeMB, gpu.PowerDrawWatts, gpu.TemperatureCelsius,
+			)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

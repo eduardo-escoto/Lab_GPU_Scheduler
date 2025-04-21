@@ -19,12 +19,23 @@ type Command struct {
 }
 
 func StartCommandMonitor(dsn string, interval time.Duration) error {
+	// Debug: Print the DSN being used
+	log.Printf("Connecting to database with DSN: %s", dsn)
+
 	// Connect to the database
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
+		log.Printf("Error connecting to database: %v", err)
 		return err
 	}
 	defer db.Close()
+
+	// Test the connection
+	err = db.Ping()
+	if err != nil {
+		log.Printf("Error pinging database: %v", err)
+		return err
+	}
 
 	// Get the server name
 	serverName, err := exec.Command("hostname").Output()
