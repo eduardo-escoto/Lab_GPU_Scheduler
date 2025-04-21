@@ -1,23 +1,24 @@
-package handlers
+// package handlers
 
-import (
-    "net/http"
-    "go-webserver-project/internal/services"
-)
+// import (
+// 	"net/http"
 
-func EmailHandler(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodPost {
-        http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-        return
-    }
+// 	"github.com/eduardo-escoto/gpu_request/server/internal/services"
+// )
 
-    // Send email
-    err := services.SendEmail("recipient@example.com", "Subject", "Email body")
-    if err != nil {
-        http.Error(w, "Failed to send email", http.StatusInternalServerError)
-        return
-    }
+// func EmailHandler(w http.ResponseWriter, r *http.Request) {
+// 	if r.Method != http.MethodPost {
+// 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+// 		return
+// 	}
 
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte("Email sent successfully"))
-}
+// 	// Send email
+// 	err := services.SendEmail("recipient@example.com", "Subject", "Email body")
+// 	if err != nil {
+// 		http.Error(w, "Failed to send email", http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	w.WriteHeader(http.StatusOK)
+// 	w.Write([]byte("Email sent successfully"))
+// }

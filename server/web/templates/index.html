@@ -1,15 +1,55 @@
-<!-- filepath: web/templates/layout.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPU Scheduler</title>
+    <title>{{ .Title }}</title>
     <!-- Include HTMX from a CDN -->
     <script src="https://unpkg.com/htmx.org"></script>
+    <link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+>
 </head>
 <body>
-    <!-- Your content here -->
-    {{ template "content" . }}
+    <h1>{{ .Title }}</h1>
+    <h2>{{ .Heading }}</h2>
+    <div id="content">
+        <p>{{ .Message }}</p>
+    </div>
+    <div id="gpu-usage">
+        <h2>GPU Usage</h2>
+        <!-- Add hx-get and hx-trigger attributes to refresh the table every 1 second -->
+        <table hx-get="/gpu-usage" hx-trigger="every 5s" hx-swap="outerHTML">
+            <thead>
+                <tr>
+                    <th>Server Name</th>
+                    <th>GPU Number</th>
+                    <th>Utilization (%)</th>
+                    <th>Memory Utilization (%)</th>
+                    <th>Memory Used (MB)</th>
+                    <th>Memory Available (MB)</th>
+                    <th>Power Usage (Watts)</th>
+                    <th>Temperature (°C)</th>
+                    <th>Last Updated</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ range .Usage }}
+                <tr>
+                    <td>{{ .ServerName }}</td>
+                    <td>{{ .GPUNumber }}</td>
+                    <td>{{ printf "%.2f" .Utilization }}</td>
+                    <td>{{ printf "%.2f" .MemoryUtilization }}</td>
+                    <td>{{ .MemoryUsedMB }}</td>
+                    <td>{{ .MemoryAvailableMB }}</td>
+                    <td>{{ printf "%.2f" .PowerUsageWatts }}</td>
+                    <td>{{ printf "%.2f" .TemperatureCelsius }}</td>
+                    <td>{{ .UpdatedAt.Format "2006-01-02 15:04:05" }}</td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
 </body>
 </html>

@@ -1,38 +1,122 @@
 package handlers
 
 import (
+	"database/sql"
+	"fmt"
+	"html/template"
+	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/eduardo-escoto/gpu_request/server/internal/database"
 )
 
-func SetupRoutes(r *mux.Router) {
-	r.HandleFunc("/", HomeHandler).Methods("GET")
-	r.HandleFunc("/users", UsersHandler).Methods("GET")
-	r.HandleFunc("/users/{id}", UserHandler).Methods("GET")
-	r.HandleFunc("/users", CreateUserHandler).Methods("POST")
+// HomePageData defines the structure for dynamic content passed to the template
+type HomePageData struct {
+	Title   string
+	Heading string
+	Message string
+	Usage   []database.RealTimeUsage
 }
 
-func RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/", HomeHandler)
-	mux.HandleFunc("/slack/events", SlackEventsHandler)
-	mux.HandleFunc("/slack/commands", SlackCommandsHandler)
-	mux.HandleFunc("/slack/interactions", SlackInteractionsHandler)
-	mux.HandleFunc("/send-email", EmailHandler)
+// RegisterRoutesWithDB registers routes and passes the database connection to handlers
+func RegisterRoutesWithDB(mux *http.ServeMux, db *sql.DB) {
+	mux.HandleFunc("/", HomeHandlerFactory(db))
+	mux.HandleFunc("/gpu-usage", GPUUsageHandler(db))
+	// mux.HandleFunc("/update-title", UpdateTitleHandlerFactory(db))
+	// Add other handlers here, passing the db connection
 }
 
-func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Welcome to the Go Webserver!"))
+func HomeHandlerFactory(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Example query using the database connection
+
+		rtusage, err := database.QueryRealTimeUsage(db)
+		if err != nil {
+			log.Fatal("Error reading query")
+		}
+
+		// log.Printf("Extracted Usage: %+v", rtusage)
+
+		// Define the dynamic content
+		data := HomePageData{
+			Title:   "GPU Scheduler Home",
+			Heading: "Welcome to GPU Scheduler",
+			Message: fmt.Sprintf("Found %d GPUs in db.", len(rtusage)),
+			Usage:   rtusage,
+		}
+		// Parse the template file
+		tmpl, err := template.ParseFiles("web/templates/index.html")
+		if err != nil {
+			http.Error(w, "Error loading template: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Execute the template with the dynamic data
+		err = tmpl.Execute(w, data)
+		if err != nil {
+			http.Error(w, "Error rendering template: "+err.Error(), http.StatusInternalServerError)
+		}
+	}
 }
 
-func UsersHandler(w http.ResponseWriter, r *http.Request) {
-	// Logic to retrieve and return users
-}
+func GPUUsageHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Query the database for real-time usage
+		rtusage, err := database.QueryRealTimeUsage(db)
+		if err != nil {
+			http.Error(w, "Error querying GPU usage: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-func UserHandler(w http.ResponseWriter, r *http.Request) {
-	// Logic to retrieve and return a specific user
-}
+		// Define the dynamic content
+		data := struct {
+			Usage []database.RealTimeUsage
+		}{
+			Usage: rtusage,
+		}
 
-func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
-	// Logic to create a new user
+		// Parse the table template
+		tmpl, err := template.New("gpu-usage").Parse(`
+            <table hx-get="/gpu-usage" hx-trigger="every 5s" hx-swap="outerHTML">
+                <thead>
+                    <tr>
+                        <th>Server Name</th>
+                        <th>GPU Number</th>
+                        <th>Utilization (%)</th>
+                        <th>Memory Utilization (%)</th>
+                        <th>Memory Used (MB)</th>
+                        <th>Memory Available (MB)</th>
+                        <th>Power Usage (Watts)</th>
+                        <th>Temperature (°C)</th>
+                        <th>Last Updated</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range .Usage }}
+                    <tr>
+                        <td>{{ .ServerName }}</td>
+                        <td>{{ .GPUNumber }}</td>
+                        <td>{{ printf "%.2f" .Utilization }}</td>
+                        <td>{{ printf "%.2f" .MemoryUtilization }}</td>
+                        <td>{{ .MemoryUsedMB }}</td>
+                        <td>{{ .MemoryAvailableMB }}</td>
+                        <td>{{ printf "%.2f" .PowerUsageWatts }}</td>
+                        <td>{{ printf "%.2f" .TemperatureCelsius }}</td>
+                        <td>{{ .UpdatedAt.Format "2006-01-02 15:04:05" }}</td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        `)
+		if err != nil {
+			http.Error(w, "Error loading template: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Execute the template with the dynamic data
+		err = tmpl.Execute(w, data)
+		if err != nil {
+			http.Error(w, "Error rendering template: "+err.Error(), http.StatusInternalServerError)
+		}
+	}
 }

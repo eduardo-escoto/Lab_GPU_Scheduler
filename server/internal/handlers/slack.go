@@ -1,18 +1,19 @@
-package handlers
+// package handlers
 
-import (
-	"go-webserver-project/internal/slackapp"
-	"net/http"
-)
+// import (
+// 	"net/http"
 
-func SlackEventsHandler(w http.ResponseWriter, r *http.Request) {
-	slackapp.HandleSlackEvents(w, r, slackapp.NewSlackClient().SigningSecret)
-}
+// 	"github.com/eduardo-escoto/gpu_request/server/internal/slackapp"
+// )
 
-func SlackCommandsHandler(w http.ResponseWriter, r *http.Request) {
-	slackapp.HandleSlashCommands(w, r)
-}
+// func SlackEventsHandler(w http.ResponseWriter, r *http.Request) {
+// 	slackapp.HandleSlackEvents(w, r, slackapp.NewSlackClient().SigningSecret)
+// }
 
-func SlackInteractionsHandler(w http.ResponseWriter, r *http.Request) {
-	slackapp.HandleInteractions(w, r)
-}
+// func SlackCommandsHandler(w http.ResponseWriter, r *http.Request) {
+// 	slackapp.HandleSlashCommands(w, r)
+// }
+
+// func SlackInteractionsHandler(w http.ResponseWriter, r *http.Request) {
+// 	slackapp.HandleInteractions(w, r)
+// }
