@@ -27,4 +27,5 @@ func HandleSlashCommands(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "Unknown command", http.StatusBadRequest)
 	}
+
 }

@@ -1,0 +1,5 @@
+server_name,gpu_number,manufacturer,model_name,vram_size_mb
+deepz,0,NVIDIA,NVIDIA GeForce RTX 3090,24576
+deepz,1,NVIDIA,NVIDIA GeForce RTX 2080 Ti,11264
+deepz,2,NVIDIA,NVIDIA GeForce RTX 2080 Ti,11264
+deepz,3,NVIDIA,NVIDIA GeForce RTX 3090,24576

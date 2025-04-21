@@ -1,0 +1,3 @@
+server_name,gpu_number,manufacturer,model_name,vram_size_mb
+deepa,0,NVIDIA,NVIDIA GeForce RTX 3090,24268
+deepa,1,NVIDIA,NVIDIA GeForce RTX 3090,24268

@@ -33,8 +33,9 @@ erDiagram
         CHAR id
         VARCHAR server_name
         INT gpu_number
-        ENUM gpu_size
-        ENUM status
+        VARCHAR manufacturer
+        VARCHAR model_name
+        INT vram_size_mb
     }
     GPU_USAGE {
         INT id
@@ -94,15 +95,16 @@ Tracks GPU access requests made by users.
 ---
 
 ### 3. **GPUs Table**
-Tracks available GPUs and their statuses.
+Tracks available GPUs and their specifications.
 
 | Column Name      | Data Type        | Description                                      |
 |------------------|------------------|--------------------------------------------------|
 | `id`             | CHAR(32)        | Primary Key, MD5 hash of `server_name` + `gpu_number`. |
 | `server_name`    | VARCHAR(255)    | Name of the server hosting the GPU.             |
 | `gpu_number`     | INT             | GPU index on the server (e.g., 0, 1, 2).         |
-| `gpu_size`       | ENUM            | GPU size: 'small', 'medium', 'large'.            |
-| `status`         | ENUM            | GPU status: 'available', 'in_use', 'maintenance'.|
+| `manufacturer`   | VARCHAR(255)    | Manufacturer of the GPU (e.g., NVIDIA, AMD).     |
+| `model_name`     | VARCHAR(255)    | Model name of the GPU (e.g., RTX 3090).          |
+| `vram_size_mb`   | INT             | VRAM size in megabytes (e.g., 8192 for 8GB).     |
 
 ---
 
@@ -149,27 +151,46 @@ Stores emails of users allowed to sign up.
 
 ---
 
-## How to Use
+## Example Usage and Instructions
 
-1. **Create the Database**:
-   Run the SQL script provided in the `schema.sql` file to create the database and tables.
+### 1. **Create the Database**
+Run the SQL script provided in the `create_db.sql` file to create the database tables:
+```bash
+mysql -u <username> -p < create_db.sql
+```
 
-2. **Insert Data**:
-   Populate the `users`, `gpus`, and `whitelist` tables with initial data.
+### 2. **Insert Data**
+Use the CSV import utility to populate the `users` and `gpus` tables.
 
-3. **Query the Database**:
-   Use SQL queries to interact with the database. For example:
-   - Find available GPUs:
-     ```sql
-     SELECT * FROM gpus WHERE status = 'available';
-     ```
-   - View pending requests:
-     ```sql
-     SELECT * FROM requests WHERE status = 'pending';
-     ```
+#### Insert Mode
+To append data to a table:
+```bash
+go run csv_import.go -file=gpus.csv -table=gpus -mode=insert
+```
 
-4. **Update GPU Status**:
-   Update the status of GPUs as they are assigned or go into maintenance:
-   ```sql
-   UPDATE gpus SET status = 'in_use' WHERE id = MD5(CONCAT('server1', '0'));
-   ```
+#### Overwrite Mode
+To overwrite existing data in a table:
+```bash
+go run csv_import.go -file=users.csv -table=users -mode=overwrite
+```
+
+### 3. **Query the Database**
+Use SQL queries to interact with the database. For example:
+- Find available GPUs:
+  ```sql
+  SELECT * FROM gpus WHERE id = 'available';
+  ```
+- View pending requests:
+  ```sql
+  SELECT * FROM requests WHERE status = 'pending';
+  ```
+
+### 4. **Update GPU Status**
+Update the status of GPUs as they are assigned or go into maintenance:
+```sql
+UPDATE gpus SET status = 'in_use' WHERE id = MD5(CONCAT('server1', '0'));
+```
+
+---
+
+Let me know if you need further updates!

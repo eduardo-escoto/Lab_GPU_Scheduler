@@ -1,11 +1,11 @@
 -- Create Database
-CREATE DATABASE gpu_scheduler;
+CREATE DATABASE IF NOT EXISTS gpu_scheduler;
 
 -- Use Database
 USE gpu_scheduler;
 
 -- Create Users Table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE users (
 );
 
 -- Create Requests Table
-CREATE TABLE requests (
+CREATE TABLE IF NOT EXISTS requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     requested_time INT NOT NULL,
@@ -32,17 +32,18 @@ CREATE TABLE requests (
 );
 
 -- Create GPUs Table
-CREATE TABLE gpus (
+CREATE TABLE IF NOT EXISTS gpus (
     id CHAR(32) PRIMARY KEY,
     server_name VARCHAR(255) NOT NULL,
     gpu_number INT NOT NULL,
-    gpu_size ENUM('small', 'medium', 'large') NOT NULL,
-    status ENUM('available', 'in_use', 'maintenance') DEFAULT 'available',
+    manufacturer VARCHAR(255) NOT NULL,
+    model_name VARCHAR(255) NOT NULL,
+    vram_size_mb INT NOT NULL,
     UNIQUE (server_name, gpu_number)
 );
 
 -- Create GPU Usage Table
-CREATE TABLE gpu_usage (
+CREATE TABLE IF NOT EXISTS gpu_usage (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     request_id INT NOT NULL,
@@ -54,7 +55,21 @@ CREATE TABLE gpu_usage (
 );
 
 -- Create Whitelist Table
-CREATE TABLE whitelist (
+CREATE TABLE IF NOT EXISTS whitelist (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- Create Real-Time Usage Table
+CREATE TABLE IF NOT EXISTS real_time_usage (
+    server_name VARCHAR(255) NOT NULL,
+    gpu_number INT NOT NULL,
+    utilization DECIMAL(5,2) NOT NULL, -- GPU utilization percentage (e.g., 75.50 for 75.5%)
+    memory_utilization DECIMAL(5,2) NOT NULL, -- Memory utilization percentage (e.g., 60.25 for 60.25%)
+    memory_used_mb INT NOT NULL, -- Memory currently in use (in MB)
+    memory_available_mb INT NOT NULL, -- Memory available (in MB)
+    power_usage_watts DECIMAL(5,2) NOT NULL, -- Power usage in watts (e.g., 150.75 for 150.75W)
+    temperature_celsius DECIMAL(5,2) NOT NULL, -- GPU temperature in Celsius (e.g., 65.50 for 65.5°C)
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (server_name, gpu_number)
 );

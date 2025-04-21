@@ -1,0 +1,3 @@
+server_name,gpu_number,manufacturer,model_name,vram_size_mb
+deepx,0,NVIDIA,NVIDIA GeForce RTX 2070,8192
+deepx,1,NVIDIA,NVIDIA GeForce RTX 2070,8192
