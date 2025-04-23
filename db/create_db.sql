@@ -8,6 +8,7 @@ USE gpu_scheduler;
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
+    user_name VARCHAR(255) NOT NULL UNIQUE, -- Added user_name column for server usage and requests
     name VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
     signup_date DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -86,7 +87,8 @@ CREATE TABLE IF NOT EXISTS gpu_processes (
     user_name VARCHAR(255) NOT NULL, -- User running the process
     gpu_utilization DECIMAL(5,2) NOT NULL, -- Percentage of GPU utilization used by this process
     used_gpu_memory INT NOT NULL, -- Amount of GPU memory used by this process (in MiB)
-    FOREIGN KEY (gpu_uuid, reported_at) REFERENCES real_time_usage(gpu_uuid, reported_at) ON DELETE CASCADE
+    FOREIGN KEY (gpu_uuid, reported_at) REFERENCES real_time_usage(gpu_uuid, reported_at) ON DELETE CASCADE,
+    FOREIGN KEY (user_name) REFERENCES users(user_name) ON DELETE CASCADE -- Added foreign key
 );
 
 -- Create Hourly Historical Usage Table
@@ -127,5 +129,6 @@ CREATE TABLE IF NOT EXISTS gpu_processes_hourly_historical (
     avg_used_gpu_memory DECIMAL(10,2) NOT NULL, -- Average GPU memory used by the user (in MiB)
     min_used_gpu_memory DECIMAL(10,2) NOT NULL, -- Minimum GPU memory used by the user (in MiB)
     max_used_gpu_memory DECIMAL(10,2) NOT NULL, -- Maximum GPU memory used by the user (in MiB)
-    PRIMARY KEY (gpu_uuid, user_name, reported_at) -- Composite primary key
+    PRIMARY KEY (gpu_uuid, user_name, reported_at), -- Composite primary key
+    FOREIGN KEY (user_name) REFERENCES users(user_name) ON DELETE CASCADE -- Added foreign key
 );
