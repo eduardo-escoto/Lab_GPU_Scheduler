@@ -77,7 +77,7 @@ func GPUUsageHandler(db *sql.DB) http.HandlerFunc {
 
 		// Parse the table template
 		tmpl, err := template.New("gpu-usage").Parse(`
-            <table hx-get="/gpu-usage" hx-trigger="every 5s" hx-swap="outerHTML">
+            <table hx-get="/gpu-usage" hx-trigger="every 1s" hx-swap="outerHTML">
                 <thead>
                     <tr>
                         <th>Server Name</th>
