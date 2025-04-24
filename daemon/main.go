@@ -16,12 +16,13 @@ func main() {
 	// Define command-line flags
 	dsnFlag := flag.String("dsn", "", "Database DSN (e.g., user:password@tcp(localhost:3306)/gpu_scheduler)")
 	intervalFlag := flag.String("interval", "", "Sleep interval in seconds between updates")
+	verboseFlag := flag.Bool("verbose", false, "Enable verbose logging") // Add verbose flag
 
 	// Parse command-line flags
 	flag.Parse()
 
 	// Load DSN from environment variable or command-line flag, fallback to default
-	dsn := os.Getenv("DSN")
+	dsn := os.Getenv("DATABASE_DSN")
 	if *dsnFlag != "" {
 		dsn = *dsnFlag
 	}
@@ -30,7 +31,9 @@ func main() {
 	}
 
 	// Debug: Print the DSN
-	log.Printf("Using DSN: %s", dsn)
+	if *verboseFlag {
+		log.Printf("Using DSN: %s", dsn)
+	}
 
 	// Load sleep interval from environment variable or command-line flag, fallback to default
 	sleepIntervalStr := os.Getenv("INTERVAL")
@@ -47,7 +50,9 @@ func main() {
 	}
 
 	// Debug: Print the sleep interval
-	log.Printf("Using sleep interval: %s", sleepInterval)
+	if *verboseFlag {
+		log.Printf("Using sleep interval: %s", sleepInterval)
+	}
 
 	// Create channels for graceful shutdown
 	stopChan := make(chan os.Signal, 1)
@@ -55,19 +60,11 @@ func main() {
 
 	// Start GPU monitoring
 	go func() {
-		err := monitor.StartGPUMonitor(dsn, sleepInterval)
+		err := monitor.StartGPUMonitor(dsn, sleepInterval, *verboseFlag) // Pass verbose flag
 		if err != nil {
 			log.Fatalf("GPU Monitor failed: %v", err)
 		}
 	}()
-
-	// // Start command monitoring
-	// go func() {
-	// 	err := commands.StartCommandMonitor(dsn, sleepInterval)
-	// 	if err != nil {
-	// 		log.Fatalf("Command Monitor failed: %v", err)
-	// 	}
-	// }()
 
 	// Wait for shutdown signal
 	<-stopChan

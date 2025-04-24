@@ -1,22 +1,75 @@
 -- Create Database
 CREATE DATABASE IF NOT EXISTS gpu_scheduler;
 
+
 -- Use Database
 USE gpu_scheduler;
 
+-- Create Survey Responses Table
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS survey_responses;
+SET FOREIGN_KEY_CHECKS = 1;
+CREATE TABLE IF NOT EXISTS survey_responses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL, -- Email to link responses to users
+    full_name VARCHAR(255) NOT NULL, -- Full name of the user
+    desired_username VARCHAR(255) NOT NULL, -- Desired username
+    ssh_key TEXT NOT NULL, -- Public SSH key
+    remark TEXT DEFAULT NULL, -- Remark or comment
+    user_type ENUM('intern', 'masters', 'phd', 'postdoc', 'faculty', 'visitor') NOT NULL, -- User type
+    lab_join_year YEAR DEFAULT NULL, -- Year the user joined the lab
+    submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- Timestamp for when the survey was submitted
+    granted_access_at DATETIME DEFAULT NULL, -- Timestamp for when access was granted
+    revoked_access_at DATETIME DEFAULT NULL, -- Timestamp for when access was revoked
+    revoke_scheduled_at DATETIME DEFAULT NULL, -- Estimated revocation date
+    approving_party VARCHAR(255) DEFAULT NULL, -- Who granted access
+    revoking_party VARCHAR(255) DEFAULT NULL, -- Who revoked access
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- Timestamp for row creation
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP -- Timestamp for last update
+);
+
 -- Create Users Table
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS users;
+SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    user_name VARCHAR(255) NOT NULL UNIQUE, -- Added user_name column for server usage and requests
-    name VARCHAR(255) NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    signup_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    is_admin BOOLEAN DEFAULT FALSE,
-    is_whitelisted BOOLEAN DEFAULT FALSE
+    email VARCHAR(255) NOT NULL UNIQUE, -- Email address (unique identifier)
+    user_name VARCHAR(255) NOT NULL UNIQUE, -- Desired username
+    name VARCHAR(255) NOT NULL, -- Full name
+    password VARCHAR(255) DEFAULT NULL, -- Password (optional, if needed)
+    comment TEXT DEFAULT NULL, -- Remark or comment
+    user_type ENUM('intern', 'masters', 'phd', 'postdoc', 'faculty', 'visitor') NOT NULL, -- User type
+    lab_join_year YEAR DEFAULT NULL, -- Year the user joined the lab
+    access_survey_submitted_at DATETIME DEFAULT NULL, -- Timestamp for the first survey submission
+    access_survey_updated_at DATETIME DEFAULT NULL, -- Timestamp for the latest survey submission
+    granted_access_at DATETIME DEFAULT NULL, -- When access was granted
+    revoked_access_at DATETIME DEFAULT NULL, -- When access was revoked
+    revoke_scheduled_at DATETIME DEFAULT NULL, -- Estimated revocation date
+    approving_party VARCHAR(255) DEFAULT NULL, -- Who granted access
+    revoking_party VARCHAR(255) DEFAULT NULL, -- Who revoked access
+    is_admin BOOLEAN DEFAULT FALSE, -- Admin flag
+    is_whitelisted BOOLEAN DEFAULT FALSE, -- Whitelist flag
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- Timestamp for row creation
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP -- Timestamp for last update
+);
+
+-- Create User SSH Keys Table
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS user_ssh_keys;
+SET FOREIGN_KEY_CHECKS = 1;
+CREATE TABLE IF NOT EXISTS user_ssh_keys (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL, -- Foreign key referencing the users table
+    ssh_key TEXT NOT NULL, -- SSH key associated with the user
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- Timestamp for when the SSH key was added
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE -- Cascade delete when a user is deleted
 );
 
 -- Create Requests Table
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS requests;
+SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE IF NOT EXISTS requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -33,19 +86,26 @@ CREATE TABLE IF NOT EXISTS requests (
 );
 
 -- Create GPUs Table
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS gpus;
+SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE IF NOT EXISTS gpus (
-    gpu_uuid CHAR(36) PRIMARY KEY, -- Using GPU_UUID as the primary key
+    gpu_uuid CHAR(40) PRIMARY KEY, -- Updated length to 40 characters
     server_name VARCHAR(255) NOT NULL,
     gpu_number INT NOT NULL,
-    manufacturer VARCHAR(255) NOT NULL,
     model_name VARCHAR(255) NOT NULL,
     vram_size_mb INT NOT NULL,
-    gpu_serial VARCHAR(255) NOT NULL UNIQUE, -- New column for GPU serial, unique
-    gpu_bus_id VARCHAR(255) NOT NULL UNIQUE, -- New column for GPU bus ID, unique
+    gpu_serial CHAR(13) DEFAULT NULL UNIQUE, -- Made nullable while keeping the unique constraint
+    gpu_bus_id CHAR(16) DEFAULT NULL UNIQUE, -- Made nullable while keeping the unique constraint
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- Timestamp for row creation
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Timestamp for last update
     UNIQUE (server_name, gpu_number) -- Retain unique constraint
 );
 
 -- Create Request-GPU Assignment Table (Join Table)
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS request_gpu_assignments;
+SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE IF NOT EXISTS request_gpu_assignments (
     request_id INT NOT NULL,
     gpu_uuid CHAR(36) NOT NULL,
@@ -55,14 +115,20 @@ CREATE TABLE IF NOT EXISTS request_gpu_assignments (
 );
 
 -- Create Whitelist Table
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS whitelist;
+SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE IF NOT EXISTS whitelist (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE
 );
 
 -- Create Real-Time Usage Table (Historical Record)
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS real_time_usage;
+SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE IF NOT EXISTS real_time_usage (
-    gpu_uuid CHAR(36) NOT NULL, -- Added GPU_UUID
+    gpu_uuid CHAR(40) NOT NULL, -- Updated to CHAR(40)
     gpu_name VARCHAR(255) NOT NULL, -- Added GPU name (e.g., "NVIDIA Tesla V100")
     server_name VARCHAR(255) NOT NULL,
     gpu_number INT NOT NULL,
@@ -78,9 +144,12 @@ CREATE TABLE IF NOT EXISTS real_time_usage (
 );
 
 -- Create GPU Processes Table
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS gpu_processes;
+SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE IF NOT EXISTS gpu_processes (
     id INT AUTO_INCREMENT PRIMARY KEY, -- Unique identifier for each process record
-    gpu_uuid CHAR(36) NOT NULL, -- GPU UUID (foreign key)
+    gpu_uuid CHAR(40) NOT NULL, -- Updated to CHAR(40)
     reported_at DATETIME NOT NULL, -- Timestamp of the GPU usage record (foreign key)
     process_id INT NOT NULL, -- Process ID (PID) of the running process
     process_name VARCHAR(255) NOT NULL, -- Name of the process (e.g., "python")
@@ -92,8 +161,11 @@ CREATE TABLE IF NOT EXISTS gpu_processes (
 );
 
 -- Create Hourly Historical Usage Table
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS real_time_usage_hourly_historical;
+SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE IF NOT EXISTS real_time_usage_hourly_historical (
-    gpu_uuid CHAR(36) NOT NULL,
+    gpu_uuid CHAR(40) NOT NULL, -- Updated to CHAR(40)
     server_name VARCHAR(255) NOT NULL,
     gpu_number INT NOT NULL,
     avg_utilization DECIMAL(5,2) NOT NULL, -- Average GPU utilization
@@ -119,8 +191,11 @@ CREATE TABLE IF NOT EXISTS real_time_usage_hourly_historical (
 );
 
 -- Create Hourly Aggregated GPU Processes Table
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS gpu_processes_hourly_historical;
+SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE IF NOT EXISTS gpu_processes_hourly_historical (
-    gpu_uuid CHAR(36) NOT NULL, -- GPU UUID
+    gpu_uuid CHAR(40) NOT NULL, -- Updated to CHAR(40)
     user_name VARCHAR(255) NOT NULL, -- User running the processes
     reported_at DATETIME NOT NULL, -- Aggregated hourly timestamp
     avg_gpu_utilization DECIMAL(5,2) NOT NULL, -- Average GPU utilization by the user
@@ -132,3 +207,4 @@ CREATE TABLE IF NOT EXISTS gpu_processes_hourly_historical (
     PRIMARY KEY (gpu_uuid, user_name, reported_at), -- Composite primary key
     FOREIGN KEY (user_name) REFERENCES users(user_name) ON DELETE CASCADE -- Added foreign key
 );
+
